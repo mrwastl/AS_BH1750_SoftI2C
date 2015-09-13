@@ -6,7 +6,7 @@
 # Datatypes (KEYWORD1)
 #######################################
 
-AS_BH1750            KEYWORD1
+AS_BH1750_SoftI2C    KEYWORD1
 sensors_resolution_t KEYWORD1
 
 

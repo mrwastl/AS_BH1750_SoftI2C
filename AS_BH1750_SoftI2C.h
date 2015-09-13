@@ -24,19 +24,21 @@
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA	 02110-1301	 USA
  */
 
-#ifndef AS_BH1750_h
-#define AS_BH1750_h
+#ifndef AS_BH1750_SoftI2C_h
+#define AS_BH1750_SoftI2C_h
 
 #if (ARDUINO >= 100)
 #include <Arduino.h>
 #else
 #include <WProgram.h>
 #endif
-#include "Wire.h"
 
 // Mögliche I2C Adressen
 #define BH1750_DEFAULT_I2CADDR 0x23
 #define BH1750_SECOND_I2CADDR 0x5C
+
+#define sdaPinDefault 7
+#define sclPinDefault 6
 
 // MTreg Werte
 // Default
@@ -90,7 +92,7 @@ typedef enum
 /**
  * BH1750 driver class.
  */
-class AS_BH1750 {
+class AS_BH1750_SoftI2C {
 public:
   /**
    * Constructor.
@@ -100,7 +102,7 @@ public:
    * Bei Nichtangabe wird die Standardadresse verwendet. 
    * Um die Alternativadresse zu nutzen, muss der Sensorpin 'ADR' des Chips auf VCC gelegt werden.
    */
-  AS_BH1750(uint8_t address = BH1750_DEFAULT_I2CADDR);
+  AS_BH1750_SoftI2C(uint8_t address = BH1750_DEFAULT_I2CADDR, byte sdaPin = sdaPinDefault, byte sclPin = sclPinDefault);
 
   /**
    * Führt die anfängliche Initialisierung des Sensors.

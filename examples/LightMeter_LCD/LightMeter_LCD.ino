@@ -1,5 +1,5 @@
-#include <Wire.h>
-#include <AS_BH1750.h>
+#include "SoftI2CMaster.h"
+#include <AS_BH1750_SoftI2C.h>
 #include <LiquidCrystal.h>
 
 /* 
@@ -46,7 +46,8 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-AS_BH1750 lightMeter;
+//AS_BH1750_SoftI2C lightMeter;
+AS_BH1750_SoftI2C lightMeter(BH1750_DEFAULT_I2CADDR, A3, A2);
 
 // Setup LCD-Shield
 LiquidCrystal lcd(8, 13, 9, 4, 5, 6, 7);

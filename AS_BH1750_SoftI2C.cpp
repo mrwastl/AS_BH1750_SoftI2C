@@ -24,7 +24,12 @@
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA	 02110-1301	 USA
  */
 
-#include "AS_BH1750.h"
+#include "AS_BH1750_SoftI2C.h"
+
+#include "SoftI2CMaster.h"
+
+SoftI2CMaster* i2c = NULL; //SoftI2CMaster( sdaPin,sclPin );
+
 
 // Debug-Flag
 #define BH1750_DEBUG 0
@@ -37,9 +42,10 @@
  * Bei Nichtangabe wird die Standardadresse verwendet. 
  * Um die Alternativadresse zu nutzen, muss der Sensorpin 'ADR' des Chips auf VCC gelegt werden.
  */
-AS_BH1750::AS_BH1750(uint8_t address) {
+AS_BH1750_SoftI2C::AS_BH1750_SoftI2C(uint8_t address, byte sdaPin, byte sclPin) {
   _address = address;
   _hardwareMode = 255;
+  i2c = new SoftI2CMaster(sclPin, sdaPin);
 }
 
 /**
@@ -66,7 +72,7 @@ AS_BH1750::AS_BH1750(uint8_t address) {
  * Defaultwerte: RESOLUTION_AUTO_HIGH, true
  *
  */
-bool AS_BH1750::begin(sensors_resolution_t mode, bool autoPowerDown) {
+bool AS_BH1750_SoftI2C::begin(sensors_resolution_t mode, bool autoPowerDown) {
 #if BH1750_DEBUG == 1
   Serial.print("  sensors_resolution_mode (virtual): ");
   Serial.println(mode, DEC);
@@ -74,7 +80,12 @@ bool AS_BH1750::begin(sensors_resolution_t mode, bool autoPowerDown) {
   _virtualMode = mode;
   _autoPowerDown = autoPowerDown;
 
-  Wire.begin();
+  if (!i2c) {
+    Serial.print("ERROR: SoftI2CMaster not initialised.");
+    return false;
+  }
+
+  //i2c->begin();
 
   defineMTReg(BH1750_MTREG_DEFAULT); // eigentlich normalerweise unnötig, da standard
 
@@ -128,10 +139,10 @@ bool AS_BH1750::begin(sensors_resolution_t mode, bool autoPowerDown) {
 /**
  * Erlaub eine Prüfung, ob ein (ansprechbarer) BH1750-Sensor vorhanden ist.
  */
-bool AS_BH1750::isPresent() {
+bool AS_BH1750_SoftI2C::isPresent() {
   // Check I2C Adresse
-  Wire.beginTransmission(_address);
-  if(Wire.endTransmission()!=0) {
+  i2c->beginTransmission(_address);
+  if(i2c->endTransmission()!=0) {
     return false; 
   }
 
@@ -155,7 +166,7 @@ bool AS_BH1750::isPresent() {
  * Weckt ein im PowerDown-Modus befindlichen Sensor auf (schadet auch dem 'wachen' Sensor nicht).
  * Funktionier nur, wenn der Sensor bereits initialisiert wurde.
  */
-void AS_BH1750::powerOn() {
+void AS_BH1750_SoftI2C::powerOn() {
   if(!isInitialized()) {
 #if BH1750_DEBUG == 1
     Serial.println("sensor not initialized");
@@ -174,7 +185,7 @@ void AS_BH1750::powerOn() {
  * Schickt den Sensor in Stromsparmodus.
  * Funktionier nur, wenn der Sensor bereits initialisiert wurde.
  */
-void AS_BH1750::powerDown() {
+void AS_BH1750_SoftI2C::powerDown() {
   if(!isInitialized()) {
 #if BH1750_DEBUG == 1
     Serial.println("sensor not initialized");
@@ -188,7 +199,7 @@ void AS_BH1750::powerDown() {
 /**
  * Sendet zum Sensor ein Befehl zum Auswahl von HardwareMode.
  */
-bool AS_BH1750::selectResolutionMode(uint8_t mode) {
+bool AS_BH1750_SoftI2C::selectResolutionMode(uint8_t mode) {
 #if BH1750_DEBUG == 1
     Serial.print("selectResolutionMode: ");
     Serial.println(mode, DEC);
@@ -236,7 +247,7 @@ bool AS_BH1750::selectResolutionMode(uint8_t mode) {
  *
  * Wurde der Sensor (noch) nicht initialisiert (begin), wird der Wert -1 geliefert.
  */
-float AS_BH1750::readLightLevel(void) {
+float AS_BH1750_SoftI2C::readLightLevel(void) {
 #if BH1750_DEBUG == 1
     Serial.print("call: readLightLevel. virtualMode: ");
     Serial.println(_virtualMode, DEC);
@@ -318,8 +329,8 @@ float AS_BH1750::readLightLevel(void) {
   if(raw==65535) {
     // Wert verdächtig hoch. Sensor prüfen. 
     // Check I2C Adresse
-    Wire.beginTransmission(_address);
-    if(Wire.endTransmission()!=0) {
+    i2c->beginTransmission(_address);
+    if(i2c->endTransmission()!=0) {
       return -1; 
     }
   }
@@ -330,20 +341,14 @@ float AS_BH1750::readLightLevel(void) {
  * Roh-Wert der Helligkeit auslesen. 
  * Wertebereich 0-65535.
  */
-uint16_t AS_BH1750::readRawLevel(void) {
+uint16_t AS_BH1750_SoftI2C::readRawLevel(void) {
   uint16_t level;
-  Wire.beginTransmission(_address);
-  Wire.requestFrom(_address, 2);
-#if (ARDUINO >= 100)
-  level = Wire.read();
+  i2c->beginTransmission(_address);
+  i2c->requestFrom(_address /*, 2*/);
+  level = i2c->read();
   level <<= 8;
-  level |= Wire.read();
-#else
-  level = Wire.receive();
-  level <<= 8;
-  level |= Wire.receive();
-#endif
-  if(Wire.endTransmission()!=0) {
+  level |= i2c->read();
+  if(i2c->endTransmission()!=0) {
 #if BH1750_DEBUG == 1
     Serial.println("I2C read error");
 #endif
@@ -363,7 +368,7 @@ uint16_t AS_BH1750::readRawLevel(void) {
 /**
  * Rechnet Roh-Werte in Lux um.
  */
-float AS_BH1750::convertRawValue(uint16_t raw) {
+float AS_BH1750_SoftI2C::convertRawValue(uint16_t raw) {
   // Basisumrechnung
   float flevel = raw/1.2;
 
@@ -411,7 +416,7 @@ float AS_BH1750::convertRawValue(uint16_t raw) {
  * Default (BH1750_MTREG_DEFAULT) = 69.
  * Mit der Empfindlichkeit verändert sich die Lesezeit (höhere Empfindlichkeit bedeutet längere Zeitspanne).
  */
-void AS_BH1750::defineMTReg(uint8_t val) {
+void AS_BH1750_SoftI2C::defineMTReg(uint8_t val) {
   if(val<BH1750_MTREG_MIN) {
     val = BH1750_MTREG_MIN;
   }
@@ -449,21 +454,17 @@ void AS_BH1750::defineMTReg(uint8_t val) {
 /**
  * Gibt an, ob der Sensor initialisiert ist.
  */
-bool AS_BH1750::isInitialized() {
+bool AS_BH1750_SoftI2C::isInitialized() {
   return _hardwareMode!=255; 
 }
 
 /**
  * Schreibt ein Byte auf I2C Bus (auf die Adresse des Sensors).
  */
-bool AS_BH1750::write8(uint8_t d) {
-  Wire.beginTransmission(_address);
-#if (ARDUINO >= 100)
-  Wire.write(d);
-#else
-  Wire.send(d);
-#endif
-  return (Wire.endTransmission()==0);
+bool AS_BH1750_SoftI2C::write8(uint8_t d) {
+  i2c->beginTransmission(_address);
+  i2c->write(d);
+  return (i2c->endTransmission()==0);
 }
 
 

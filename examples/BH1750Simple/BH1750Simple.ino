@@ -30,10 +30,11 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <Wire.h>
-#include <AS_BH1750.h>
+#include "SoftI2CMaster.h"
+#include <AS_BH1750_SoftI2C.h>
 
-AS_BH1750 sensor;
+//AS_BH1750_SoftI2C sensor;
+AS_BH1750_SoftI2C sensor(BH1750_DEFAULT_I2CADDR, A3, A2);
 
 void setup(){
   Serial.begin(9600);
