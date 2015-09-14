@@ -5,16 +5,16 @@ This is an Arduino library for the BH1750FVI Digital Light Sensor
 (http://s6z.de/joomla3/index.php/arduino/sensoren/15-umgebungslichtsensor-bh1750)
 and is a fork of https://github.com/hexenmeister/AS_BH1750.
 
-This fork supports controlling the light sensor using software I2C with user selectable ports for SDA and SCL.
+This fork supports controlling the light sensor using software I2C with user selectable pins for SDA and SCL.
 
 
 Differences to original version:
 
- - Class name: AS_BH1750_SoftI2C instead of AS_BH1750
+ - Class name: ``AS_BH1750_SoftI2C`` instead of ``AS_BH1750``
 
  - Includes:
    ```
-   #include "SoftI2CMaster.h"`
+   #include "SoftI2CMaster.h"
    #include <AS_BH1750_SoftI2C.h>
    ```
 
