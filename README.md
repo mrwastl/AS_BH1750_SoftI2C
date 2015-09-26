@@ -7,6 +7,8 @@ and is a fork of https://github.com/hexenmeister/AS_BH1750.
 
 This fork supports controlling the light sensor using software I2C with user selectable pins for SDA and SCL.
 
+Required library:
+ * todbod's version of [SoftI2CMaster](https://github.com/todbot/SoftI2CMaster)
 
 Differences to original version:
 
