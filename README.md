@@ -22,6 +22,7 @@ Differences to original version:
 
    instead of
    ```
+   #include <Wire.h>
    #include <AS_BH1750.h>
    ```
 
